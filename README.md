@@ -221,6 +221,85 @@ Each app repo hook resolves the `common` dependency from the OCI registry and li
 
 ## Flux CD HelmRelease
 
+### Monorepo
+
+A single `GitRepository` points to this repo and is shared by all apps. Each app gets its own `HelmRelease` per environment referencing the shared source at its chart path. The `common` library is resolved by Helm directly from the Git artifact via the `file://` reference — Flux does not need to know about it.
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: helmtemplates
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/<org>/helmtemplates.git
+  ref:
+    branch: main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: app-alpha
+  namespace: staging
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: ./charts/app-alpha
+      sourceRef:
+        kind: GitRepository
+        name: helmtemplates        # shared by all apps
+        namespace: flux-system
+      valuesFiles:
+        - charts/app-alpha/values.yaml
+        - charts/app-alpha/values-staging.yaml
+  install:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+  upgrade:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: app-beta
+  namespace: staging
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: ./charts/app-beta
+      sourceRef:
+        kind: GitRepository
+        name: helmtemplates        # shared by all apps
+        namespace: flux-system
+      valuesFiles:
+        - charts/app-beta/values.yaml
+        - charts/app-beta/values-staging.yaml
+  install:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+  upgrade:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+```
+
+The same pattern repeats per environment — only the namespace and last `valuesFiles` entry change:
+
+| Environment | Namespace | Last `valuesFiles` entry |
+|---|---|---|
+| dev | `dev` | `charts/app-*/values-dev.yaml` |
+| staging | `staging` | `charts/app-*/values-staging.yaml` |
+| prod | `prod` | `charts/app-*/values-prod.yaml` |
+
+### Multi-repo
+
 In a multi-repo setup, each app repo contains its own Flux manifests. You need one `GitRepository` per app and one `HelmRelease` per environment, using `chart.spec.valuesFiles` to layer the environment overlay directly from the Git source — no ConfigMaps needed.
 
 **`GitRepository`** (one per app, in `flux-system`):
@@ -277,6 +356,14 @@ The same pattern repeats per environment — only the namespace and last `values
 | prod | `prod` | `charts/app-alpha/values-prod.yaml` |
 
 `app-beta` follows the exact same shape with its own `GitRepository` and chart path. The `common` library dependency is resolved by Helm at render time from the OCI registry — Flux does not need to know about it.
+
+**Monorepo vs. multi-repo comparison:**
+
+| | Monorepo | Multi-repo |
+|---|---|---|
+| `GitRepository` | One, shared by all apps | One per app |
+| `common` resolved by | Helm via `file://` from the Git artifact | Helm via OCI registry |
+| A change to `common` | All apps reconcile on next poll | Only apps that bump the pinned version |
 
 ## Values reference
 
