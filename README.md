@@ -114,6 +114,21 @@ helm dependency update charts/my-app
 
 4. Add a `values.schema.json` alongside `values.yaml`, including `"common"` as an allowed property.
 
+## App-specific templates
+
+Templates unique to a single app live directly in that app's `templates/` directory alongside the shared wrappers:
+
+```
+charts/app-alpha/
+└── templates/
+    ├── deployment.yaml   # calls library.deployment
+    ├── service.yaml      # calls library.service
+    ├── configmap.yaml    # app-alpha only
+    └── ingress.yaml      # app-alpha only
+```
+
+Use `common` only for templates that are shared across **all** apps. If the same custom template starts appearing in multiple apps, that is the signal to promote it into `charts/common/templates/` as a new named template (e.g. `library.ingress`) and call it from each app.
+
 ## Development
 
 Install pre-commit hooks after cloning:
@@ -134,6 +149,75 @@ Run hooks manually at any time:
 ```bash
 pre-commit run --all-files
 ```
+
+## Multi-repo setup
+
+This repo uses a monorepo layout where `common` is referenced locally via `file://`. If you split into separate repos — one for `common` and one per app — two things change.
+
+**1. Publish `common` to an OCI registry**
+
+In the `common` repo, package and push on every release:
+
+```bash
+helm package charts/common
+helm push common-0.1.0.tgz oci://ghcr.io/<org>/helm-charts
+```
+
+**2. Update the dependency reference in each app's `Chart.yaml`**
+
+```yaml
+# monorepo (file reference)
+dependencies:
+  - name: common
+    version: "0.1.0"
+    repository: "file://../common"
+
+# multi-repo (OCI registry)
+dependencies:
+  - name: common
+    version: "0.1.0"
+    repository: "oci://ghcr.io/<org>/helm-charts"
+```
+
+`helm dependency update` will then pull `common` from the registry. Everything else — lint script, pre-commit hooks, schema, env overlays — stays the same.
+
+**Versioning**
+
+Each app pins to a specific version of `common`. Use [Renovate](https://docs.renovatebot.com/) or Dependabot to automatically open PRs when a new version of `common` is published.
+
+> **Tradeoff:** Multi-repo gives independent release cycles for each app and `common`, but you lose the ability to make a breaking change in `common` and update all apps atomically in a single PR.
+
+**Pre-commit hooks in multi-repo**
+
+Each repo owns its own `.pre-commit-config.yaml`. The responsibility splits as follows:
+
+| Repo | What the hook validates |
+|---|---|
+| `common` | Library chart structure and template syntax |
+| Each app repo | App values + schema + rendered output using the pinned `common` version |
+
+The `common` repo hook lints the library chart in isolation:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: helm-lint
+        name: Helm lint (common)
+        language: system
+        entry: helm lint charts/common
+        pass_filenames: false
+        files: ^charts/common/
+
+  - repo: https://github.com/norwoodj/helm-docs
+    rev: v1.14.2
+    hooks:
+      - id: helm-docs
+        args:
+          - --chart-search-root=charts/common
+```
+
+Each app repo hook resolves the `common` dependency from the OCI registry and lints the full chart — this is where schema validation and template rendering are confirmed against the pinned version of `common`.
 
 ## Values reference
 
