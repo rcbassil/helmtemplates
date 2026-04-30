@@ -1,0 +1,9 @@
+# Helm
+mychart/charts/*.tgz
+mychart/Chart.lock
+
+# pre-commit
+.pre-commit-hooks.yaml
+
+# OS
+.DS_Store
