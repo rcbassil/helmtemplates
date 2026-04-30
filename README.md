@@ -219,6 +219,65 @@ repos:
 
 Each app repo hook resolves the `common` dependency from the OCI registry and lints the full chart — this is where schema validation and template rendering are confirmed against the pinned version of `common`.
 
+## Flux CD HelmRelease
+
+In a multi-repo setup, each app repo contains its own Flux manifests. You need one `GitRepository` per app and one `HelmRelease` per environment, using `chart.spec.valuesFiles` to layer the environment overlay directly from the Git source — no ConfigMaps needed.
+
+**`GitRepository`** (one per app, in `flux-system`):
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: app-alpha
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/<org>/app-alpha.git
+  ref:
+    branch: main
+```
+
+**`HelmRelease`** (one per environment, in the target namespace):
+
+```yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: app-alpha
+  namespace: staging
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: ./charts/app-alpha
+      sourceRef:
+        kind: GitRepository
+        name: app-alpha
+        namespace: flux-system
+      valuesFiles:
+        - charts/app-alpha/values.yaml
+        - charts/app-alpha/values-staging.yaml
+  install:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+  upgrade:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+```
+
+The same pattern repeats per environment — only the namespace and last `valuesFiles` entry change:
+
+| Environment | Namespace | Last `valuesFiles` entry |
+|---|---|---|
+| dev | `dev` | `charts/app-alpha/values-dev.yaml` |
+| staging | `staging` | `charts/app-alpha/values-staging.yaml` |
+| prod | `prod` | `charts/app-alpha/values-prod.yaml` |
+
+`app-beta` follows the exact same shape with its own `GitRepository` and chart path. The `common` library dependency is resolved by Helm at render time from the OCI registry — Flux does not need to know about it.
+
 ## Values reference
 
 See each chart's auto-generated `README.md` for its full values reference:
