@@ -4,8 +4,56 @@ A Helm chart monorepo with a shared library chart and per-app charts, environmen
 
 ## Requirements
 
-- [Helm](https://helm.sh/docs/intro/install/) v3+
-- [pre-commit](https://pre-commit.com/#install)
+The following tools must be installed on the host before running the pre-commit hooks. `helm-docs` is the only exception — pre-commit downloads it automatically.
+
+### macOS
+
+```bash
+brew install helm pre-commit
+helm plugin install https://github.com/losisin/helm-values-schema-json --verify=false
+pre-commit install
+```
+
+### Linux
+
+```bash
+# Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# pre-commit
+pip3 install pre-commit
+
+# helm-values-schema-json plugin
+helm plugin install https://github.com/losisin/helm-values-schema-json --verify=false
+
+# Install hooks
+pre-commit install
+```
+
+### Windows
+
+```powershell
+# Helm
+winget install Helm.Helm
+
+# pre-commit
+pip install pre-commit
+
+# helm-values-schema-json plugin
+helm plugin install https://github.com/losisin/helm-values-schema-json --verify=false
+
+# Install hooks
+pre-commit install
+```
+
+> **Note:** On Windows, run the commands in PowerShell or Git Bash. WSL2 is recommended for the best compatibility with the shell-based hook scripts.
+
+| Tool | Required for | Auto-installed by pre-commit? |
+|---|---|---|
+| `helm` | `helm-lint`, `helm-schema` | No — install manually |
+| `helm-values-schema-json` plugin | `helm-schema` | No — install manually |
+| `pre-commit` | running all hooks | No — install manually |
+| `helm-docs` | `helm-docs` hook | Yes |
 
 ## Repository structure
 
