@@ -219,6 +219,49 @@ repos:
 
 Each app repo hook resolves the `common` dependency from the OCI registry and lints the full chart — this is where schema validation and template rendering are confirmed against the pinned version of `common`.
 
+**Schema generation in multi-repo**
+
+The `@schema` annotations in `values.yaml` and the generation logic stay exactly the same. The only change is that each app repo runs `helm schema` directly for its single chart instead of looping, so `scripts/helm-schema-all.sh` is not needed:
+
+```yaml
+# .pre-commit-config.yaml (per app repo)
+repos:
+  - repo: local
+    hooks:
+      - id: helm-schema
+        name: Helm schema (generate values.schema.json)
+        language: system
+        entry: bash -c 'cd charts/app-alpha && helm schema -f values.yaml --use-helm-docs -o values.schema.json'
+        pass_filenames: false
+        files: ^charts/app-alpha/values\.yaml$
+
+      - id: helm-lint
+        name: Helm lint
+        language: system
+        entry: bash -c 'helm dependency update charts/app-alpha && helm lint charts/app-alpha --values charts/app-alpha/values.yaml'
+        pass_filenames: false
+        files: ^charts/app-alpha/
+
+  - repo: https://github.com/norwoodj/helm-docs
+    rev: v1.14.2
+    hooks:
+      - id: helm-docs
+        args:
+          - --chart-search-root=charts/app-alpha
+          - --document-dependency-values
+```
+
+The `common` repo does not need a schema — library charts are never installed directly and their `global.*` defaults are validated by the app schemas.
+
+What changes vs. what stays across both setups:
+
+| | Monorepo | Per-app repo |
+|---|---|---|
+| `scripts/helm-schema-all.sh` | Loops over all `charts/*/` | Not needed — inline command |
+| `@schema` annotations in `values.yaml` | Same | Same |
+| `scripts/helm-lint-all.sh` | Loops over all `charts/*/` | Not needed — inline command |
+| `helm-docs` `--chart-search-root` | `charts` | `charts/app-alpha` |
+
 ## Flux CD HelmRelease
 
 ### Monorepo
