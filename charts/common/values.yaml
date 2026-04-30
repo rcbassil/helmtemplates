@@ -1,0 +1,26 @@
+global:
+  # -- Global pod-level security context applied to all charts
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  # -- Global container-level security context applied to all charts
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  # -- Global image pull secrets
+  imagePullSecrets: []
+
+  # -- Global node selector
+  nodeSelector: {}
+
+  # -- Global tolerations
+  tolerations: []
+
+  # -- Global affinity rules
+  affinity: {}

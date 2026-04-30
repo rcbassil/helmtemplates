@@ -1,8 +1,5 @@
 replicaCount: 3
 
-image:
-  pullPolicy: IfNotPresent
-
 resources:
   requests:
     cpu: 250m

@@ -10,6 +10,3 @@ resources:
   limits:
     cpu: 200m
     memory: 128Mi
-
-autoscaling:
-  enabled: false

@@ -1,16 +1,15 @@
+global: {}
+
 # -- Number of pod replicas
 replicaCount: 1
 
 image:
   # -- Container image repository
-  repository: nginx
+  repository: app-alpha
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag. Defaults to the chart appVersion when empty
   tag: ""
-
-# -- List of image pull secrets for private registries
-imagePullSecrets: []
 
 # -- Override the chart name
 nameOverride: ""
@@ -32,79 +31,31 @@ podAnnotations: {}
 # -- Labels to add to the pod
 podLabels: {}
 
-# -- Pod-level security context
+# -- Pod-level security context. Inherits from global.podSecurityContext when empty
 podSecurityContext: {}
-  # fsGroup: 2000
 
-# -- Container-level security context
+# -- Container-level security context. Inherits from global.securityContext when empty
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
   # -- Kubernetes Service type
   type: ClusterIP
   # -- Service port
-  port: 80
-
-ingress:
-  # -- Enable ingress
-  enabled: false
-  # -- Ingress class name
-  className: ""
-  # -- Ingress annotations
-  annotations: {}
-  # -- Ingress hosts
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  # -- TLS configuration
-  tls: []
-
-httpRoute:
-  # -- Enable Gateway API HTTPRoute
-  enabled: false
-  # -- HTTPRoute annotations
-  annotations: {}
-  # -- Gateways this route is attached to
-  parentRefs:
-    - name: gateway
-      sectionName: http
-  # -- Hostnames matching HTTP header
-  hostnames:
-    - chart-example.local
-  # -- HTTPRoute rules
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
+  port: 8080
 
 # -- Container resource requests and limits
 resources: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
 # -- Liveness probe configuration
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
 
 # -- Readiness probe configuration
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
 
 autoscaling:
@@ -113,22 +64,18 @@ autoscaling:
   # -- Minimum number of replicas
   minReplicas: 1
   # -- Maximum number of replicas
-  maxReplicas: 100
+  maxReplicas: 10
   # -- Target CPU utilization percentage
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
 
-# -- Additional volumes to add to the pod
+# -- Additional volumes
 volumes: []
-
-# -- Additional volume mounts to add to the container
+# -- Additional volume mounts
 volumeMounts: []
 
 # -- Node selector for pod scheduling
 nodeSelector: {}
-
 # -- Tolerations for pod scheduling
 tolerations: []
-
 # -- Affinity rules for pod scheduling
 affinity: {}

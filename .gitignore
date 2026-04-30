@@ -1,6 +1,6 @@
 # Helm
-mychart/charts/*.tgz
-mychart/Chart.lock
+charts/*/charts/*.tgz
+charts/*/Chart.lock
 
 # pre-commit
 .pre-commit-hooks.yaml
