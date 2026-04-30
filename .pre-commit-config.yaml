@@ -1,6 +1,13 @@
 repos:
   - repo: local
     hooks:
+      - id: helm-schema
+        name: Helm schema (generate values.schema.json)
+        language: script
+        entry: scripts/helm-schema-all.sh
+        pass_filenames: false
+        files: ^charts/.*/values\.yaml$
+
       - id: helm-lint
         name: Helm lint (all charts)
         language: script

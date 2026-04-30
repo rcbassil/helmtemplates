@@ -25,6 +25,7 @@ App Alpha
 | autoscaling.maxReplicas | int | `10` | Maximum number of replicas |
 | autoscaling.minReplicas | int | `1` | Minimum number of replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target CPU utilization percentage |
+| common | object | `{}` | Values passed through to the common library subchart |
 | fullnameOverride | string | `""` | Override the full release name |
 | global | object | `{}` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |

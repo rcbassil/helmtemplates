@@ -1,11 +1,26 @@
 global: {}
 
+# -- Values passed through to the common library subchart
+common: {}
+
+# @schema
+# minimum: 1
+# @schema
 # -- Number of pod replicas
 replicaCount: 1
 
+# @schema
+# required: [repository, pullPolicy]
+# @schema
 image:
+  # @schema
+  # minLength: 1
+  # @schema
   # -- Container image repository
   repository: app-beta
+  # @schema
+  # enum: [Always, IfNotPresent, Never]
+  # @schema
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag. Defaults to the chart appVersion when empty
@@ -37,9 +52,19 @@ podSecurityContext: {}
 # -- Container-level security context. Inherits from global.securityContext when empty
 securityContext: {}
 
+# @schema
+# required: [type, port]
+# @schema
 service:
+  # @schema
+  # enum: [ClusterIP, NodePort, LoadBalancer, ExternalName]
+  # @schema
   # -- Kubernetes Service type
   type: ClusterIP
+  # @schema
+  # minimum: 1
+  # maximum: 65535
+  # @schema
   # -- Service port
   port: 9090
 
@@ -61,10 +86,20 @@ readinessProbe:
 autoscaling:
   # -- Enable HorizontalPodAutoscaler
   enabled: false
+  # @schema
+  # minimum: 1
+  # @schema
   # -- Minimum number of replicas
   minReplicas: 1
+  # @schema
+  # minimum: 1
+  # @schema
   # -- Maximum number of replicas
   maxReplicas: 10
+  # @schema
+  # minimum: 1
+  # maximum: 100
+  # @schema
   # -- Target CPU utilization percentage
   targetCPUUtilizationPercentage: 80
 
